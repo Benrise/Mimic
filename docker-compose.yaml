@@ -38,6 +38,22 @@ services:
     networks:
       - student_net
 
+  inference:
+    build: 
+      context: ./classifier
+    container_name: inference
+    env_file:
+      .env
+    volumes:
+      - ./classifier:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:${INFERENCE_PORT}"
+    networks:
+      - student_net
+
 networks:
   student_net:
     driver: bridge
