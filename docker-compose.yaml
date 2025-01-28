@@ -26,6 +26,8 @@ services:
     build: 
       context: ./bot
     container_name: gpt_bot_service
+    volumes:
+      - ./bot:/app
     env_file:
       .env
     depends_on:
