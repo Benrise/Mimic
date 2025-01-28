@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: student_postgres
+    env_file:
+      .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./data/pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - student_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U student -d chat_db || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  bot:
+    container_name: bot
+    build: 
+      context: ./bot
+    container_name: gpt_bot_service
+    env_file:
+      .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "443:${API_PORT}"
+    networks:
+      - student_net
+
+networks:
+  student_net:
+    driver: bridge
