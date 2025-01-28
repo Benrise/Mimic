@@ -47,6 +47,9 @@
          IdentityFile /path/to/your/key/user@vm_ip_address.key
          ForwardAgent yes
      ```
+
+      Примечание: для MacOS не использовать ковычки
+
      Пояснения к параметрам:
      - **Host** — псевдоним для сервера.
      - **HostName** — IP-адрес сервера.
