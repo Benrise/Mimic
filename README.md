@@ -10,6 +10,10 @@
      ```bash
      chmod 400 /path/to/your/key/user@host.key
      ```
+
+     ```bash
+      icacls "C:\Users\<Имя пользователя>\.ssh\prodml-bootcamp-app-sa@84.201.168.6.key" /inheritance:r /grant:r "<whoami>:R"
+     ```
    
 2. **Установите плагин Remote - SSH**  
    - Откройте VS Code.  
