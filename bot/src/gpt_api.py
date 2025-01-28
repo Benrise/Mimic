@@ -58,3 +58,27 @@ def query_openai_with_context(body: GetMessageRequestModel, model: str = "gpt-4o
     answer_text = chat_completion.choices[0].message.content
     logger.info(f"OpenAI answer: {answer_text}")
     return answer_text
+
+
+def query_openai_without_context(prompt: str, model: str = "gpt-4o") -> str:
+    """
+    Формирует сообщения для OpenAI, без контекста диалога,
+    затем отправляет запрос и возвращает текст ответа.
+    """
+    logger.info(f"Using model: {model}")
+    
+    messages_for_openai = [
+        {"role": "system", "content": SYS_PROMPT},
+        {"role": "user", "content": prompt}
+    ]
+
+    # Делаем запрос к OpenAI ChatCompletion
+    chat_completion = client.chat.completions.create(
+        messages=messages_for_openai,
+        model=model,
+    )
+    logger.info(str(chat_completion))
+
+    answer_text = chat_completion.choices[0].message.content
+    logger.info(f"OpenAI answer: {answer_text}")
+    return answer_text

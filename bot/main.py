@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from src import database
 from src.config import DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME, PROXY_URL, OPEN_AI_API_KEY, API_PORT
 from src.schemas import GetMessageResponseModel, GetMessageRequestModel
-from src.gpt_api import query_openai_with_context
+from src.gpt_api import query_openai_with_context, query_openai_without_context
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +85,17 @@ async def get_message(body: GetMessageRequestModel) -> GetMessageResponseModel:
         dialog_id=body.dialog_id
     )
 
+@app.post("/get_message_without_context")
+async def get_message_without_context(prompt: str):
+    response_from_openai = "Service unavailable"
+    
+    # Генерируем ответ GPT
+    if OPEN_AI_API_KEY and PROXY_URL:
+        response_from_openai = query_openai_without_context(prompt, model="gpt-4o")
+        
+    return {
+        "response": response_from_openai
+    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=API_PORT)
