@@ -5,11 +5,12 @@ import psycopg2
 
 from uuid import uuid4
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
 from src import database
-from src.config import DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME, PROXY_URL, OPEN_AI_API_KEY, API_PORT
+from src.config import DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME, PROXY_URL, OPEN_AI_API_KEY, API_PORT, SYS_PROMPT
 from src.schemas import GetMessageResponseModel, GetMessageRequestModel
-from src.gpt_api import query_openai_with_context, query_openai_without_context
+from src.gpt_api import query_openai_with_context, query_openai_with_local_context
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,8 @@ app = FastAPI(
     title="GPT Bot Service",
     description="Сервис для генерации ответов",
 )
+
+dialog_history = [{"role": "system", "content": SYS_PROMPT}]
 
 
 @app.on_event("startup")
@@ -85,17 +88,47 @@ async def get_message(body: GetMessageRequestModel) -> GetMessageResponseModel:
         dialog_id=body.dialog_id
     )
 
-@app.post("/get_message_without_context")
-async def get_message_without_context(prompt: str):
+@app.post("/playground", response_class=HTMLResponse)
+async def playground(query: str):
+    """
+    Эндпоинт для тестирования взаимодействия с ботом в режиме реального времени c локальным сохранением.
+    
+    Действия:
+    1. Принимает текстовый запрос от пользователя (query).
+    2. Добавляет запрос пользователя в историю диалога (dialog_history) с ролью "user".
+    3. Генерирует ответ от модели GPT, используя текущий контекст диалога (dialog_history).
+    4. Добавляет ответ модели в историю диалога с ролью "assistant".
+    5. Форматирует последние сообщения из истории диалога (исключая первый элемент) 
+       для удобного вывода в HTML-формате.
+    6. Возвращает отформатированный диалог в виде HTML-страницы.
+    """
+    global dialog_history
+    dialog_history.append({"role": "user", "content": query})
+    
     response_from_openai = "Service unavailable"
     
-    # Генерируем ответ GPT
     if OPEN_AI_API_KEY and PROXY_URL:
-        response_from_openai = query_openai_without_context(prompt, model="gpt-4o")
+        response_from_openai = query_openai_with_local_context(dialog_history, model="gpt-4o")
+        dialog_history.append({"role": "assistant", "content": response_from_openai})
+       
+    filtered_history = dialog_history[1:]
+    
+    formatted_dialog = "\n".join(
+        f"[{i}][{'Пользователь' if msg['role'] == 'user' else 'Бот'}]: {msg['content']}"
+        for i, msg in enumerate(filtered_history)
+    )
         
-    return {
-        "response": response_from_openai
-    }
+    return f"{formatted_dialog}"
+
+@app.delete("/reset_playground")
+async def reset_playground():
+    """
+    Эндпоинт для обнуления локальной истории диалога.
+    """
+    global dialog_history
+    dialog_history = [{"role": "system", "content": SYS_PROMPT}]
+    return "История диалога успешно обнулена до системного промпта."
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=API_PORT)
