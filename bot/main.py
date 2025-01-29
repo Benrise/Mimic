@@ -12,6 +12,7 @@ from src.config import DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME, PROXY_UR
 from src.schemas import GetMessageResponseModel, GetMessageRequestModel
 from src.gpt_api import query_openai_with_context, query_openai_with_local_context
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -139,4 +140,4 @@ async def get_playground_data() -> list:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=API_PORT)
+    uvicorn.run(app, host="0.0.0.0", port=API_PORT, debug=True)

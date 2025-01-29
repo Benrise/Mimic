@@ -13,6 +13,7 @@ from src.config import (
     DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME, INFERENCE_PORT
 )
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -54,7 +55,7 @@ async def playground(dialog: IncomingDialog):
     }
 
 @app.post("/predict", response_model=Prediction)
-def predict(msg: IncomingMessage) -> Prediction:
+async def predict(msg: IncomingMessage) -> Prediction:
     """
     Эндпоинт для сохранения сообщения и получения вероятности того,
     что в диалоге участвует бот.
@@ -80,7 +81,9 @@ def predict(msg: IncomingMessage) -> Prediction:
             detail="No messages found for this dialog_id"
         )
 
-    is_bot_probability = classify_text(conversation_text)
+    logger.info("Conversation_text:", conversation_text)
+    
+    is_bot_probability = await classify_text(conversation_text)
     prediction_id = uuid.uuid4()
 
     return Prediction(
@@ -93,4 +96,4 @@ def predict(msg: IncomingMessage) -> Prediction:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=INFERENCE_PORT)
+    uvicorn.run(app, host="0.0.0.0", port=INFERENCE_PORT, debug=True)

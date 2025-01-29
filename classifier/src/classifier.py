@@ -41,11 +41,11 @@ class BotClassifier():
             )
             
             verdict = response.choices[0].message.content
-            print(f"OpenAI verdict: {verdict}")
+            self.logger.info(f"OpenAI verdict: {verdict}")
             
             return verdict
         except Exception as e:
-            print(f"Error fetching from OpenAI: {e}")
+            self.logger.warning(f"Error fetching from OpenAI: {e}")
             return None
         
     async def _fetch_gigachat(self, dialog):
@@ -58,7 +58,7 @@ class BotClassifier():
                 
                 verdict = response.choices[0].message.content
                 
-                print(f"GigaChat verdict: {verdict}")
+                self.logger.info(f"GigaChat verdict: {verdict}")
                 
                 return verdict
         except Exception as e:
