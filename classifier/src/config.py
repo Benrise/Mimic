@@ -16,6 +16,9 @@ OPEN_AI_API_KEY = os.getenv("OPEN_AI_API_KEY", "")
 # API Gigachat
 GIGACHAT_API_KEY = os.getenv("GIGACHAT_API_KEY", "")
 
+# API Mistral
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "")
+
 # Прокси для обхода блокировок
 PROXY_URL = os.getenv("PROXY_URL", "")
 
