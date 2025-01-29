@@ -81,7 +81,7 @@ async def predict(msg: IncomingMessage) -> Prediction:
             detail="No messages found for this dialog_id"
         )
 
-    logger.info("Conversation_text:", conversation_text)
+    logger.info("Conversation_text: {conversation_text}")
     
     is_bot_probability = await classify_text(conversation_text)
     prediction_id = uuid.uuid4()
