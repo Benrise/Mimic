@@ -1,9 +1,12 @@
 import logging
 from transformers import pipeline
 from .config import MODEL_NAME, CANDIDATE_LABELS
+from .classifier import BotClassifier
 
 logger = logging.getLogger(__name__)
+
 _classifier = None
+_classifier_main = None
 
 
 def load_model():
@@ -19,6 +22,13 @@ def load_model():
             device=-1
         )
     return _classifier
+
+def load_classifier():
+    global _classifier_main
+    if _classifier_main is None:
+        logger.info("Loading classifier...")
+        _classifier_main = BotClassifier()
+    return _classifier_main
 
 
 def format_conversation(messages):
@@ -62,17 +72,11 @@ def classify_text(messages) -> float:
     return result["scores"][bot_index]
 
 def classify_dialog(messages: list) -> float:
-    classifier = load_model()
+    classifier = load_classifier()
     conversation_text = format_dialog(messages)
-    print('='*100)
-    print("Conversation text:", conversation_text)
-    print('='*100)
-    prompt = f"Определи, есть ли ai-бот в диалоге:\n\n{conversation_text}"
     
-    result = classifier(
-        prompt,
-        candidate_labels=CANDIDATE_LABELS
-    )
+    logger.info(f"Conversation to classify", conversation_text)
+    
+    result = classifier.predict(conversation_text)
 
-    bot_index = result["labels"].index(CANDIDATE_LABELS[0])
-    return result["scores"][bot_index]
+    return result

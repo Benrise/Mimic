@@ -10,6 +10,15 @@ DB_NAME = os.getenv("DB_NAME", "chat_db")
 # Формируем строку подключения для psycopg2
 DB_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
+# API ChatGPT
+OPEN_AI_API_KEY = os.getenv("OPEN_AI_API_KEY", "")
+
+# API Gigachat
+GIGACHAT_API_KEY = os.getenv("GIGACHAT_API_KEY", "")
+
+# Прокси для обхода блокировок
+PROXY_URL = os.getenv("PROXY_URL", "")
+
 INFERENCE_PORT = os.getenv("INFERENCE_PORT", "8001")
 
 # Параметры модели

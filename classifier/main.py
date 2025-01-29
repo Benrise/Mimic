@@ -10,7 +10,7 @@ from src import database
 from src.schemas import IncomingMessage, Prediction, IncomingDialog
 from src.model_inference import classify_text, classify_dialog
 from src.config import (
-    DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME, INFERENCE_PORT, S
+    DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME, INFERENCE_PORT
 )
 
 logger = logging.getLogger(__name__)
@@ -45,9 +45,9 @@ def on_startup() -> None:
     # Инициализация схемы/таблиц в базе
     database.init_db()
 
-@app.post("/predict_dialog")
-def predict_dialog(dialog: IncomingDialog):
-    is_bot_probability = classify_dialog(dialog.messages)
+@app.post("/playground")
+async def playground(dialog: IncomingDialog):
+    is_bot_probability = await classify_dialog(dialog.messages)
 
     return {
         "is_bot_probability": is_bot_probability

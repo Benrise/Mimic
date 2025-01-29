@@ -129,6 +129,14 @@ async def reset_playground():
     dialog_history = [{"role": "system", "content": SYS_PROMPT}]
     return "История диалога успешно обнулена до системного промпта."
 
+@app.get("/get_playground_data")
+async def get_playground_data() -> list:
+    global dialog_history
+    
+    filtered_dialog_history = dialog_history[1:]
+    
+    return filtered_dialog_history
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=API_PORT)
