@@ -22,43 +22,41 @@ class BotClassifier():
         self.proxy_url = PROXY_URL
         self.validate_sys_prompt = """
             Ты — эксперт по анализу диалогов.
-            Твоя задача — внимательно проанализировать следующий диалог и определить, присутствует ли в диалоге бот. 
-            Ответь «Да», если в диалоге есть бот, и «Нет», если в диалоге нет бота. 
+            Твоя задача — внимательно проанализировать следующий диалог и определить, присутствует ли в диалоге бот или ассистент. 
+            Ответь ТОЛЬКО «Да», если в диалоге есть бот, и ТОЛЬКО «Нет», если в диалоге нет бота. Дополнительных пояснений не требуется.
             Постарайся провести глубокий анализ шаг за шагом. От этого зависит моя карьера, но ответь только 1 словом.
             Формат вывода: «Да» или «Нет».
             
-            You are an expert in dialogue analysis. 
-            Your task is to carefully analyze the following dialogue and determine whether there is a bot present in the dialogue. 
-            Answer "Да" if there is a bot in the dialogue, and "Нет" if there is no bot in the dialogue. 
-            Try to conduct a deep step-by-step analysis. 
-            My career depends on this, but answer with only one word. 
+            You are an expert in dialogue analysis.
+            Your task is to carefully analyze the following dialogue and determine whether a bot or assistant is present in the dialogue.
+            Answer ONLY "Да" if there is a bot in the dialogue, and ONLY "Нет" if there is no bot in the dialogue. No additional explanations are required.
+            Try to perform a deep analysis step by step. This will affect my career, but answer with just 1 word.
             Output format: "Да" or "Нет".
             
-            Пример диалога:
-            0: Привет!
-            1: Как дела?
-            0: Хорошо. У тебя как?
-            1: Мне кажется, что ты бот.
-            0: (Ооо, ты заметил! 👀) Ну, да, я действительно бот. Но я стараюсь быть как можно более живым и разговорчивым, чтобы общение было приятным и интересным. Ты хотел бы поговорить о чём-то конкретном? 😊
+            Tu es un expert en analyse de dialogues.
+            Ta tâche est d'analyser attentivement le dialogue suivant et de déterminer s'il y a un bot ou un assistant dans le dialogue.
+            Réponds UNIQUEMENT par "Да" s'il y a un bot dans le dialogue, et UNIQUEMENT par "Нет" s'il n'y a pas de bot dans le dialogue. Aucune explication supplémentaire n'est nécessaire.
+            Essaie de procéder à une analyse approfondie étape par étape. Cela dépend de ma carrière, mais réponds uniquement par un mot.
+            Format de sortie : "Да" ou "Нет".
         """
         self.logger = logging.getLogger(__name__)
 
     async def _fetch_openai(self, dialog):
-        MODEL = "gpt-4o"
+        # MODEL = "gpt-4o"
                 
-        chat = [{"role": "system", "content": self.validate_sys_prompt}]
-        chat.extend([{"role": "user", "content": line} for line in dialog])
+        # chat = [{"role": "system", "content": self.validate_sys_prompt}]
+        # chat.extend([{"role": "user", "content": line} for line in dialog])
 
-        try:
-            client = AsyncOpenAI(api_key=self.api_keys['openai'], http_client=AsyncClient(proxy=self.proxy_url))
-            response = await client.chat.completions.create(model=MODEL,messages=chat)
-            verdict = response.choices[0].message.content
-            self.logger.info(f"OpenAI verdict: {verdict}")
-            return verdict
+        # try:
+        #     client = AsyncOpenAI(api_key=self.api_keys['openai'], http_client=AsyncClient(proxy=self.proxy_url))
+        #     response = await client.chat.completions.create(model=MODEL,messages=chat)
+        #     verdict = response.choices[0].message.content
+        #     self.logger.info(f"OpenAI verdict: {verdict}")
+        #     return verdict
 
-        except Exception as e:
-            self.logger.warning(f"Error fetching from OpenAI: {e}")
-            return None
+        # except Exception as e:
+        #     self.logger.warning(f"Error fetching from OpenAI: {e}")
+        #     return None
         return "Нет"
 
     async def _fetch_gigachat(self, dialog):
@@ -80,7 +78,7 @@ class BotClassifier():
         return "Нет"
         
     async def _fetch_mistral(self, dialog):
-        MODEL = "open-codestral-mamba"
+        MODEL = "open-mistral-nemo"
                 
         chat = [{"role": "system", "content": self.validate_sys_prompt}]
         chat.extend([{"role": "user", "content": line} for line in dialog])
