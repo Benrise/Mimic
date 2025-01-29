@@ -46,11 +46,11 @@ def classify_text(messages) -> float:
     classifier = load_classifier()
     conversation_text = format_conversation(messages)
     
-    logger.info(f"Conversation to classify", conversation_text)
+    logger.info(f"Conversation to classify: {conversation_text}")
     
     result = classifier.predict(conversation_text)
     
-    logger.info(f"Conversation classified:", result)
+    logger.info(f"Conversation classified: {result}")
 
     return result
 
@@ -59,10 +59,10 @@ def classify_dialog(messages: list) -> float:
     classifier = load_classifier()
     conversation_text = format_conversation_local(messages)
     
-    logger.info(f"Conversation to classify", conversation_text)
+    logger.info(f"Conversation to classify: {conversation_text}")
     
     result = classifier.predict(conversation_text)
     
-    logger.info(f"Conversation classified:", result)
+    logger.info(f"Conversation classified: {conversation_text}")
 
     return result
