@@ -23,32 +23,16 @@ class BotClassifier():
         self.logger = logging.getLogger(__name__)
 
     async def _fetch_openai(self, dialog):
-        # MODEL = "gpt-4o"
+        MODEL = "gpt-4o"
                 
-        # chat = [{"role": "system", "content": self.validate_sys_prompt}]
-        # chat.extend([{"role": "user", "content": line} for line in dialog])
-
-        # try:
-        #     client = AsyncOpenAI(api_key=self.api_keys['openai'], http_client=AsyncClient(proxy=self.proxy_url))
-        #     response = await client.chat.completions.create(model=MODEL,messages=chat)
-        #     verdict = response.choices[0].message.content
-        #     self.logger.info(f"OpenAI verdict: {verdict}")
-        #     return verdict
-
-        # except Exception as e:
-        #     self.logger.warning(f"Error fetching from OpenAI: {e}")
-        #     return None
-        return "Нет"
-
-    async def _fetch_gigachat(self, dialog):
         chat = [{"role": "system", "content": self.validate_sys_prompt}]
         chat.extend([{"role": "user", "content": line} for line in dialog])
-        
+
         try:
             client = AsyncOpenAI(api_key=self.api_keys['openai'], http_client=AsyncClient(proxy=self.proxy_url))
             response = await client.chat.completions.create(model=MODEL,messages=chat)
             verdict = response.choices[0].message.content
-            self.logger.info(f"GigaChat verdict: {verdict}")
+            self.logger.info(f"OpenAI verdict: {verdict}")
             return verdict
 
         except Exception as e:
