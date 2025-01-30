@@ -217,6 +217,9 @@ class BotClassifier():
         return features
 
     async def predict(self, dialog):
-        features = await self._extract_validations_layers(dialog)
-        score = sum(features.values()) / len(features) if features else 0
+        weighted_score = sum(features[key] * self.weights.get(key, 1) for key in features)
+    
+        total_weight = sum(self.weights.values())
+        score = weighted_score / total_weight if total_weight > 0 else 0
+        
         return score
