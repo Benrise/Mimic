@@ -1,19 +1,20 @@
 import logging
-import time
+import random
 
 from typing import List
 from openai import OpenAI
 from httpx import Client
 from uuid import UUID
 
-from .utils import human_sleep, introduce_typos
+from .utils import human_sleep, introduce_typos, get_random_name
 from .database import select_messages_by_dialog
 from .schemas import GetMessageRequestModel
 from .config import (
     PROXY_URL, 
     OPEN_AI_API_KEY, 
     SYS_PROMPT, 
-    BOT_MODEL
+    BOT_MODEL,
+    BOT_NAMES,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,10 +35,14 @@ def build_openai_messages(dialog_id: UUID, last_msg_text: str) -> List[dict]:
     
     participant_index=0 => user, participant_index=1 => assistant
     """
+    random_name = random.choice(BOT_NAMES)
+    logger.info(f"Chosen bot name: {random_name}")
+    sys_prompt_filled = SYS_PROMPT.format(random_name=random_name)
+    
     db_messages = select_messages_by_dialog(dialog_id)
 
     messages_for_openai = []
-    messages_for_openai.append({"role": "system", "content": SYS_PROMPT})
+    messages_for_openai.append({"role": "system", "content": sys_prompt_filled})
 
     for msg in db_messages:
         role = "user" if msg["participant_index"] == 0 else "assistant"

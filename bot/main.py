@@ -1,6 +1,7 @@
 import time
 import uvicorn
 import logging
+import random
 import psycopg2
 
 from uuid import uuid4
@@ -8,19 +9,27 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from src import database
-from src.config import DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME, PROXY_URL, OPEN_AI_API_KEY, API_PORT, SYS_PROMPT
+from src.config import DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME, PROXY_URL, OPEN_AI_API_KEY, API_PORT, SYS_PROMPT, BOT_NAMES
 from src.schemas import GetMessageResponseModel, GetMessageRequestModel
 from src.gpt_api import query_openai_with_context, query_openai_with_local_context
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+"""
+Имитация локальной БД для песочницы (/playground, /reset_playground, /get_playground_data)
+"""
+random_name = random.choice(BOT_NAMES)
+logger.info(f"Chosen bot name (local history): {random_name}")
+sys_prompt_filled = SYS_PROMPT.format(random_name=random_name)
+dialog_history = [{"role": "system", "content": sys_prompt_filled}]
+
+
 app = FastAPI(
     title="GPT Bot Service",
     description="Сервис для генерации ответов",
 )
-
-dialog_history = [{"role": "system", "content": SYS_PROMPT}]
 
 
 @app.on_event("startup")
