@@ -1,6 +1,7 @@
 import asyncio
 import openai
 import logging
+import statistics
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -92,7 +93,7 @@ class BotClassifier():
         """
         Проверяет зеркальные ответы по косинусному сходству TF-IDF и расстоянию Левенштейна
         """
-        if not participant1_messages or not participant2_messages:
+        if not participant1_messages or not participant2_messages or len(participant1_messages) < 2 or len(participant2_messages) < 2:
             return 0
         
         mirror_count = 0
@@ -116,6 +117,9 @@ class BotClassifier():
     
     
     def _check_grammar_errors(self, participant1_messages, participant2_messages):
+        """
+        Проверяет сообщения на грамматические ошибки
+        """
         def count_errors(messages):
             return sum(len(self.grammar_tool.check(msg)) for msg in messages)
         
@@ -129,6 +133,34 @@ class BotClassifier():
         elif (errors_p1 == 0 and errors_p2 > 0) or (errors_p1 > 0 and errors_p2 == 0):
             return 1.0
         return 0.0
+    
+
+    def _check_message_length(self, participant1_messages, participant2_messages):
+        """
+        Проверяет и сравнивает длины слов и предложений
+        """
+        def analyze_text(messages):
+            sentence_lengths = []
+            word_lengths = []
+            
+            for message in messages:
+                sentences = message.split('.')
+                for sentence in sentences:
+                    words = sentence.split()
+                    sentence_lengths.append(len(words))
+                    word_lengths.extend([len(word) for word in words])
+            
+            avg_sentence_length = statistics.mean(sentence_lengths) if sentence_lengths else 0
+            avg_word_length = statistics.mean(word_lengths) if word_lengths else 0
+            return avg_sentence_length, avg_word_length
+        
+        avg_sent_len_p1, avg_word_len_p1 = analyze_text(participant1_messages)
+        avg_sent_len_p2, avg_word_len_p2 = analyze_text(participant2_messages)
+        
+        self.logger.info(f"Avg sentence words - P1: {avg_sent_len_p1:.2f}, P2: {avg_sent_len_p2:.2f}")
+        self.logger.info(f"Avg word length - P1: {avg_word_len_p1:.2f}, P2: {avg_word_len_p2:.2f}")
+        
+        return 1.0 if abs(avg_sent_len_p1 - avg_sent_len_p2) > 5 or abs(avg_word_len_p1 - avg_word_len_p2) > 2 else 0.0
 
     async def _extract_validations_layers(self, dialog):
         features = {}
@@ -164,6 +196,16 @@ class BotClassifier():
         features['grammar'] = grammar_score
         
         self.logger.info(f"Grammar score: {grammar_score}")
+        
+        """
+        Слой проверки на длину слов и предложений
+        """
+        length_score = self._check_message_length(participant1_messages, participant2_messages)
+        features['length'] = length_score
+        
+        self.logger.info(f"Length score: {length_score}")
+        
+        self.logger.info(f"Assembleded features for all validation layers: {features}")
         
         return features
 
