@@ -4,11 +4,12 @@ import logging
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from Levenshtein import ratio
+from language_tool_python import LanguageTool
 
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
 from mistralai import Mistral
-from Levenshtein import ratio
 
 from openai import AsyncOpenAI
 from httpx import AsyncClient
@@ -22,10 +23,11 @@ class BotClassifier():
             'openai': OPEN_AI_API_KEY,
             'gigachat': GIGACHAT_API_KEY,
         }
+        self.logger = logging.getLogger(__name__)
+        self.grammar_tool = LanguageTool('ru-RU')
         self.vectorizer = TfidfVectorizer()
         self.proxy_url = PROXY_URL
         self.validate_sys_prompt = VALIDATE_SYS_PROMPT
-        self.logger = logging.getLogger(__name__)
 
     async def _fetch_openai(self, dialog):
         MODEL = "gpt-4o"
@@ -111,6 +113,22 @@ class BotClassifier():
                 mirror_count += 1
         
         return mirror_count / total_pairs if total_pairs > 0 else 0
+    
+    
+    def _check_grammar_errors(self, participant1_messages, participant2_messages):
+        def count_errors(messages):
+            return sum(len(self.grammar_tool.check(msg)) for msg in messages)
+        
+        errors_p1 = count_errors(participant1_messages)
+        errors_p2 = count_errors(participant2_messages)
+        
+        self.logger.info(f"Grammar errors - P1: {errors_p1}, P2: {errors_p2}")
+        
+        if errors_p1 == 0 and errors_p2 == 0:
+            return 0.5
+        elif (errors_p1 == 0 and errors_p2 > 0) or (errors_p1 > 0 and errors_p2 == 0):
+            return 1.0
+        return 0.0
 
     async def _extract_validations_layers(self, dialog):
         features = {}
@@ -122,14 +140,14 @@ class BotClassifier():
         """
         Слой проверки с отправкой диалога трем моделям LLM
         """
-        # openai_response, gigachat_response = await asyncio.gather(
-        #     self._fetch_openai(dialog),
-        #     self._fetch_gigachat(dialog),
-        # )
-        # if openai_response:
-        #     features['openai'] = openai_response
-        # if gigachat_response:
-        #     features['gigachat'] = gigachat_response
+        openai_response, gigachat_response = await asyncio.gather(
+            self._fetch_openai(dialog),
+            self._fetch_gigachat(dialog),
+        )
+        if openai_response:
+            features['openai'] = openai_response
+        if gigachat_response:
+            features['gigachat'] = gigachat_response
 
         """
         Слой проверки на зеркалирования
@@ -138,6 +156,14 @@ class BotClassifier():
         features['mirroring'] = mirroring_score
         
         self.logger.info(f"Mirroring score: {mirroring_score}")
+    
+        """
+        Слой проверки на наличие грамматических ошибок
+        """
+        grammar_score = self._check_grammar_errors(participant1_messages, participant2_messages)
+        features['grammar'] = grammar_score
+        
+        self.logger.info(f"Grammar score: {grammar_score}")
         
         return features
 

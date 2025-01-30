@@ -11,3 +11,4 @@ httpx>=0.24.1
 mistralai==1.5.0
 scikit-learn==1.6.1
 Levenshtein==0.26.1
+language-tool-python==2.8.2
