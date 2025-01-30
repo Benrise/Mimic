@@ -38,7 +38,7 @@ class BotClassifier():
         }
 
     async def _fetch_openai(self, dialog):
-        MODEL = "gpt-4o"
+        MODEL = "gpt-3.5-turbo-16k"
                 
         chat = [{"role": "system", "content": self.validate_sys_prompt}]
         chat.extend([{"role": "user", "content": line} for line in dialog])
@@ -56,7 +56,7 @@ class BotClassifier():
         return "Нет"
 
     async def _fetch_gigachat(self, dialog):
-        MODEL = "GigaChat-Pro"
+        MODEL = "GigaChat"
         
         chat = Chat(messages=[Messages(role=MessagesRole.SYSTEM, content=self.validate_sys_prompt)])
         chat.messages.extend([Messages(role=MessagesRole.USER, content=line) for line in dialog])
@@ -101,7 +101,7 @@ class BotClassifier():
         Проверяет зеркальные ответы по косинусному сходству TF-IDF и расстоянию Левенштейна
         """
         if not participant1_messages or not participant2_messages or len(participant1_messages) < 2 or len(participant2_messages) < 2:
-            return 0
+            return 0.5
         
         mirror_count = 0
         total_pairs = min(len(participant1_messages), len(participant2_messages))
@@ -120,7 +120,7 @@ class BotClassifier():
             if cosine_sim > 0.5 or levenshtein_sim > 0.5:
                 mirror_count += 1
         
-        return mirror_count / total_pairs if total_pairs > 0 else 0
+        return mirror_count / total_pairs if total_pairs > 0 else 0.5
     
     
     def _check_grammar_errors(self, participant1_messages, participant2_messages):
@@ -135,11 +135,9 @@ class BotClassifier():
         
         print(f"Grammar errors - P1: {errors_p1}, P2: {errors_p2}")
         
-        if errors_p1 == 0 and errors_p2 == 0:
-            return 0.5
-        elif (errors_p1 == 0 and errors_p2 > 0) or (errors_p1 > 0 and errors_p2 == 0):
+        if (errors_p1 == 0 and errors_p2 > 0) or (errors_p1 > 0 and errors_p2 == 0):
             return 1.0
-        return 0.0
+        return 0.5
     
 
     def _check_message_length(self, participant1_messages, participant2_messages):
@@ -167,7 +165,7 @@ class BotClassifier():
         print(f"Avg sentence words - P1: {avg_sent_len_p1:.2f}, P2: {avg_sent_len_p2:.2f}")
         print(f"Avg word length - P1: {avg_word_len_p1:.2f}, P2: {avg_word_len_p2:.2f}")
         
-        return 1.0 if abs(avg_sent_len_p1 - avg_sent_len_p2) > 5 or abs(avg_word_len_p1 - avg_word_len_p2) > 2 else 0.0
+        return 1.0 if abs(avg_sent_len_p1 - avg_sent_len_p2) > 5 or abs(avg_word_len_p1 - avg_word_len_p2) > 2 else 0.5
 
     async def _extract_validations_layers(self, dialog):
         features = {}
@@ -217,6 +215,8 @@ class BotClassifier():
         return features
 
     async def predict(self, dialog):
+        features = await self._extract_validations_layers(dialog)
+        
         weighted_score = sum(features[key] * self.weights.get(key, 1) for key in features)
     
         total_weight = sum(self.weights.values())

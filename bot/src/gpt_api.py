@@ -93,7 +93,7 @@ def build_openai_messages(dialog_id: UUID, last_msg_text: str) -> List[dict]:
     return messages_for_openai
 
 
-def query_openai_with_context(body: GetMessageRequestModel, model: str = "gpt-4o") -> str:
+def query_openai_with_context(body: GetMessageRequestModel, model: str) -> str:
     """
     Формирует сообщения для OpenAI, включая весь контекст диалога,
     затем отправляет запрос и возвращает текст ответа.
@@ -117,7 +117,7 @@ def query_openai_with_context(body: GetMessageRequestModel, model: str = "gpt-4o
     return answer_text
 
 
-def query_openai_with_local_context(dialog: list, model: str = "gpt-4o") -> str:
+def query_openai_with_local_context(dialog: list, model: str) -> str:
     """
     Формирует сообщения для OpenAI, с локальным контекстом диалога,
     затем отправляет запрос и возвращает текст ответа.
