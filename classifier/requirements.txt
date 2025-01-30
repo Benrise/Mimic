@@ -9,3 +9,5 @@ openai>=1.0.0
 gigachat==0.1.12
 httpx>=0.24.1
 mistralai==1.5.0
+scikit-learn==1.6.1
+Levenshtein==0.26.1

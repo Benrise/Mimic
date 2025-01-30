@@ -62,7 +62,5 @@ def classify_dialog(messages: list) -> float:
     logger.info(f"Conversation to classify: {conversation_text}")
     
     result = classifier.predict(conversation_text)
-    
-    logger.info(f"Conversation classified: {conversation_text}")
 
     return result
