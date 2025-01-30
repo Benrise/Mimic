@@ -29,6 +29,13 @@ class BotClassifier():
         self.vectorizer = TfidfVectorizer()
         self.proxy_url = PROXY_URL
         self.validate_sys_prompt = VALIDATE_SYS_PROMPT
+        self.weights = {
+            'openai': 0.4,
+            'gigachat': 0.4,
+            'mirroring': 0.2,
+            'grammar': 0.3,
+            'length': 0.1
+        }
 
     async def _fetch_openai(self, dialog):
         MODEL = "gpt-4o"
@@ -176,9 +183,9 @@ class BotClassifier():
             self._fetch_openai(dialog),
             self._fetch_gigachat(dialog),
         )
-        if openai_response:
+        if openai_response != None:
             features['openai'] = openai_response
-        if gigachat_response:
+        if gigachat_response != None:
             features['gigachat'] = gigachat_response
 
         """
