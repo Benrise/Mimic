@@ -1,11 +1,13 @@
 import logging
 import random
+import time
 
 from typing import List
 from openai import OpenAI
 from httpx import Client
 from uuid import UUID
 
+from .utils import humanSleep
 from .database import select_messages_by_dialog
 from .schemas import GetMessageRequestModel
 from .config import PROXY_URL, OPEN_AI_API_KEY, SYS_PROMPT
@@ -109,6 +111,9 @@ def query_openai_with_context(body: GetMessageRequestModel, model: str = "gpt-4o
 
     answer_text = chat_completion.choices[0].message.content
     logger.info(f"OpenAI answer: {answer_text}")
+    
+    humanSleep(answer_text)
+        
     return answer_text
 
 
@@ -124,10 +129,15 @@ def query_openai_with_local_context(dialog: list, model: str = "gpt-4o") -> str:
         messages=dialog,
         model=model,
     )
+    
     logger.info(str(chat_completion))
-
+    
     answer_text = introduce_typos(chat_completion.choices[0].message.content)
+    
     logger.info(f"OpenAI answer: {answer_text}")
+    
+    humanSleep(answer_text)
+    
     return answer_text
 
 

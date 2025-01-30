@@ -40,7 +40,7 @@ class BotClassifier():
             client = AsyncOpenAI(api_key=self.api_keys['openai'], http_client=AsyncClient(proxy=self.proxy_url))
             response = await client.chat.completions.create(model=MODEL,messages=chat)
             verdict = response.choices[0].message.content.lower()
-            self.logger.info(f"OpenAI verdict: {verdict}")
+            print(f"OpenAI verdict: {verdict}")
             return 1 if "да" in verdict else 0
 
         except Exception as e:
@@ -58,7 +58,7 @@ class BotClassifier():
             async with GigaChat(credentials=self.api_keys['gigachat'], verify_ssl_certs=False, model=MODEL) as giga:
                 response = await asyncio.to_thread(lambda: giga.chat(chat))
                 verdict = response.choices[0].message.content.lower()
-                self.logger.info(f"GigaChat verdict: {verdict}")
+                print(f"GigaChat verdict: {verdict}")
                 return 1 if "да" in verdict else 0
             
         except Exception as e:
@@ -108,7 +108,7 @@ class BotClassifier():
             
             levenshtein_sim = ratio(msg1, msg2)
             
-            self.logger.info(f"Pair {i}: Cosine={cosine_sim:.2f}, Levenshtein={levenshtein_sim:.2f}")
+            print(f"Pair {i}: Cosine={cosine_sim:.2f}, Levenshtein={levenshtein_sim:.2f}")
             
             if cosine_sim > 0.5 or levenshtein_sim > 0.5:
                 mirror_count += 1
@@ -126,7 +126,7 @@ class BotClassifier():
         errors_p1 = count_errors(participant1_messages)
         errors_p2 = count_errors(participant2_messages)
         
-        self.logger.info(f"Grammar errors - P1: {errors_p1}, P2: {errors_p2}")
+        print(f"Grammar errors - P1: {errors_p1}, P2: {errors_p2}")
         
         if errors_p1 == 0 and errors_p2 == 0:
             return 0.5
@@ -157,8 +157,8 @@ class BotClassifier():
         avg_sent_len_p1, avg_word_len_p1 = analyze_text(participant1_messages)
         avg_sent_len_p2, avg_word_len_p2 = analyze_text(participant2_messages)
         
-        self.logger.info(f"Avg sentence words - P1: {avg_sent_len_p1:.2f}, P2: {avg_sent_len_p2:.2f}")
-        self.logger.info(f"Avg word length - P1: {avg_word_len_p1:.2f}, P2: {avg_word_len_p2:.2f}")
+        print(f"Avg sentence words - P1: {avg_sent_len_p1:.2f}, P2: {avg_sent_len_p2:.2f}")
+        print(f"Avg word length - P1: {avg_word_len_p1:.2f}, P2: {avg_word_len_p2:.2f}")
         
         return 1.0 if abs(avg_sent_len_p1 - avg_sent_len_p2) > 5 or abs(avg_word_len_p1 - avg_word_len_p2) > 2 else 0.0
 
@@ -166,8 +166,8 @@ class BotClassifier():
         features = {}
         participant1_messages, participant2_messages = self._extract_dialog_messages(dialog)
         
-        self.logger.info(f"participant1_messages {participant1_messages}")
-        self.logger.info(f"participant2_messages {participant2_messages}")
+        print(f"participant1_messages {participant1_messages}")
+        print(f"participant2_messages {participant2_messages}")
         
         """
         Слой проверки с отправкой диалога трем моделям LLM
@@ -187,7 +187,7 @@ class BotClassifier():
         mirroring_score = self._check_mirroring(participant1_messages, participant2_messages)
         features['mirroring'] = mirroring_score
         
-        self.logger.info(f"Mirroring score: {mirroring_score}")
+        print(f"Mirroring score: {mirroring_score}")
     
         """
         Слой проверки на наличие грамматических ошибок
@@ -195,7 +195,7 @@ class BotClassifier():
         grammar_score = self._check_grammar_errors(participant1_messages, participant2_messages)
         features['grammar'] = grammar_score
         
-        self.logger.info(f"Grammar score: {grammar_score}")
+        print(f"Grammar score: {grammar_score}")
         
         """
         Слой проверки на длину слов и предложений
@@ -203,9 +203,9 @@ class BotClassifier():
         length_score = self._check_message_length(participant1_messages, participant2_messages)
         features['length'] = length_score
         
-        self.logger.info(f"Length score: {length_score}")
+        print(f"Length score: {length_score}")
         
-        self.logger.info(f"Assembleded features for all validation layers: {features}")
+        print(f"Assembleded features for all validation layers: {features}")
         
         return features
 
