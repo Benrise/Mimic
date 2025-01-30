@@ -13,7 +13,7 @@ from src.config import (
     DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME, INFERENCE_PORT
 )
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(

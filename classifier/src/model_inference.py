@@ -1,6 +1,4 @@
 import logging
-from transformers import pipeline
-from .config import MODEL_NAME, CANDIDATE_LABELS
 from .classifier import BotClassifier
 
 logger = logging.getLogger(__name__)

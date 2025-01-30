@@ -73,7 +73,7 @@ async def get_message(body: GetMessageRequestModel) -> GetMessageResponseModel:
     response_from_openai = "Service unavailable"
     # Генерируем ответ GPT
     if OPEN_AI_API_KEY and PROXY_URL:
-        response_from_openai = query_openai_with_context(body, model="gpt-3.5-turbo-16k")
+        response_from_openai = query_openai_with_context(body)
 
     # Сохраняем сообщение бота
     bot_msg_id = uuid4()
@@ -109,7 +109,7 @@ async def playground(query: str):
     response_from_openai = "Service unavailable"
     
     if OPEN_AI_API_KEY and PROXY_URL:
-        response_from_openai = query_openai_with_local_context(dialog_history, model="gpt-3.5-turbo-16k")
+        response_from_openai = query_openai_with_local_context(dialog_history)
         dialog_history.append({"role": "assistant", "content": response_from_openai})
        
     filtered_history = dialog_history[1:]

@@ -1,5 +1,4 @@
 import asyncio
-import openai
 import logging
 import statistics
 
@@ -10,12 +9,20 @@ from language_tool_python import LanguageTool
 
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
-from mistralai import Mistral
 
 from openai import AsyncOpenAI
 from httpx import AsyncClient
 
-from .config import GIGACHAT_API_KEY, OPEN_AI_API_KEY, PROXY_URL, VALIDATE_SYS_PROMPT
+from .config import (
+    GIGACHAT_API_KEY, 
+    GIGACHAT_VALIDATION_MODEL, 
+    OPEN_AI_API_KEY, 
+    OPENAI_VALIDATION_MODEL,
+    BOTHUB_API_KEY,
+    BOTHUB_API_BASE_URL,
+    PROXY_URL, 
+    VALIDATE_SYS_PROMPT
+)
 
 
 class BotClassifier():
@@ -23,6 +30,7 @@ class BotClassifier():
         self.api_keys = {
             'openai': OPEN_AI_API_KEY,
             'gigachat': GIGACHAT_API_KEY,
+            'bothub': BOTHUB_API_KEY,
         }
         self.logger = logging.getLogger(__name__)
         self.grammar_tool = LanguageTool('ru-RU')
@@ -37,47 +45,56 @@ class BotClassifier():
             'length': 0.1
         }
 
-    async def _fetch_openai(self, dialog):
-        MODEL = "gpt-3.5-turbo-16k"
-                
+    async def _validate_with_openai(self, dialog):
+        model = OPENAI_VALIDATION_MODEL
+        base_url = None
+        
+        if BOTHUB_API_BASE_URL or len(BOTHUB_API_BASE_URL) > 0:
+            base_url = BOTHUB_API_BASE_URL
+ 
         chat = [{"role": "system", "content": self.validate_sys_prompt}]
         chat.extend([{"role": "user", "content": line} for line in dialog])
 
         try:
-            client = AsyncOpenAI(api_key=self.api_keys['openai'], http_client=AsyncClient(proxy=self.proxy_url))
-            response = await client.chat.completions.create(model=MODEL,messages=chat)
+            client = AsyncOpenAI(
+                api_key=self.api_keys['openai'], 
+                base_url=base_url, 
+                http_client=AsyncClient(proxy=self.proxy_url)
+            )
+            response = await client.chat.completions.create(model=model,messages=chat)
             verdict = response.choices[0].message.content.lower()
-            print(f"OpenAI verdict: {verdict}")
+            self.logger.info(f"OpenAI verdict: {verdict}")
             return 1 if "да" in verdict else 0
 
         except Exception as e:
             self.logger.warning(f"Error fetching from OpenAI: {e}")
             return None
-        return "Нет"
 
-    async def _fetch_gigachat(self, dialog):
-        MODEL = "GigaChat"
+    async def _validate_with_gigachat(self, dialog):
+        model = GIGACHAT_VALIDATION_MODEL
         
         chat = Chat(messages=[Messages(role=MessagesRole.SYSTEM, content=self.validate_sys_prompt)])
         chat.messages.extend([Messages(role=MessagesRole.USER, content=line) for line in dialog])
         
         try:
-            async with GigaChat(credentials=self.api_keys['gigachat'], verify_ssl_certs=False, model=MODEL) as giga:
+            async with GigaChat(
+                    credentials=self.api_keys['gigachat'],
+                    model=model,
+                    verify_ssl_certs=False
+                ) as giga:
                 response = await asyncio.to_thread(lambda: giga.chat(chat))
                 verdict = response.choices[0].message.content.lower()
-                print(f"GigaChat verdict: {verdict}")
+                self.logger.info(f"GigaChat verdict: {verdict}")
                 return 1 if "да" in verdict else 0
             
         except Exception as e:
             self.logger.warning(f"Error fetching from GigaChat: {e}")
             return None
-        return "Нет"
         
     def _extract_dialog_messages(self, dialog):
         """
         Разделяем диалог на два списка участников
         """
-        
         dialog_lines = dialog.strip().splitlines()
         
         participant1_messages = []
@@ -115,7 +132,7 @@ class BotClassifier():
             
             levenshtein_sim = ratio(msg1, msg2)
             
-            print(f"Pair {i}: Cosine={cosine_sim:.2f}, Levenshtein={levenshtein_sim:.2f}")
+            self.logger.info(f"Pair {i}: Cosine={cosine_sim:.2f}, Levenshtein={levenshtein_sim:.2f}")
             
             if cosine_sim > 0.5 or levenshtein_sim > 0.5:
                 mirror_count += 1
@@ -133,7 +150,7 @@ class BotClassifier():
         errors_p1 = count_errors(participant1_messages)
         errors_p2 = count_errors(participant2_messages)
         
-        print(f"Grammar errors - P1: {errors_p1}, P2: {errors_p2}")
+        self.logger.info(f"Grammar errors - P1: {errors_p1}, P2: {errors_p2}")
         
         if (errors_p1 == 0 and errors_p2 > 0) or (errors_p1 > 0 and errors_p2 == 0):
             return 1.0
@@ -162,24 +179,27 @@ class BotClassifier():
         avg_sent_len_p1, avg_word_len_p1 = analyze_text(participant1_messages)
         avg_sent_len_p2, avg_word_len_p2 = analyze_text(participant2_messages)
         
-        print(f"Avg sentence words - P1: {avg_sent_len_p1:.2f}, P2: {avg_sent_len_p2:.2f}")
-        print(f"Avg word length - P1: {avg_word_len_p1:.2f}, P2: {avg_word_len_p2:.2f}")
+        self.logger.info(f"Avg sentence words - P1: {avg_sent_len_p1:.2f}, P2: {avg_sent_len_p2:.2f}")
+        self.logger.info(f"Avg word length - P1: {avg_word_len_p1:.2f}, P2: {avg_word_len_p2:.2f}")
         
         return 1.0 if abs(avg_sent_len_p1 - avg_sent_len_p2) > 5 or abs(avg_word_len_p1 - avg_word_len_p2) > 2 else 0.5
 
     async def _extract_validations_layers(self, dialog):
+        """
+        Формирование слоев проверок
+        """
         features = {}
         participant1_messages, participant2_messages = self._extract_dialog_messages(dialog)
         
-        print(f"participant1_messages {participant1_messages}")
-        print(f"participant2_messages {participant2_messages}")
+        self.logger.info(f"participant1_messages {participant1_messages}")
+        self.logger.info(f"participant2_messages {participant2_messages}")
         
         """
         Слой проверки с отправкой диалога трем моделям LLM
         """
         openai_response, gigachat_response = await asyncio.gather(
-            self._fetch_openai(dialog),
-            self._fetch_gigachat(dialog),
+            self._validate_with_openai(dialog),
+            self._validate_with_gigachat(dialog),
         )
         if openai_response != None:
             features['openai'] = openai_response
@@ -192,7 +212,7 @@ class BotClassifier():
         mirroring_score = self._check_mirroring(participant1_messages, participant2_messages)
         features['mirroring'] = mirroring_score
         
-        print(f"Mirroring score: {mirroring_score}")
+        self.logger.info(f"Mirroring score: {mirroring_score}")
     
         """
         Слой проверки на наличие грамматических ошибок
@@ -200,7 +220,7 @@ class BotClassifier():
         grammar_score = self._check_grammar_errors(participant1_messages, participant2_messages)
         features['grammar'] = grammar_score
         
-        print(f"Grammar score: {grammar_score}")
+        self.logger.info(f"Grammar score: {grammar_score}")
         
         """
         Слой проверки на длину слов и предложений
@@ -208,9 +228,9 @@ class BotClassifier():
         length_score = self._check_message_length(participant1_messages, participant2_messages)
         features['length'] = length_score
         
-        print(f"Length score: {length_score}")
+        self.logger.info(f"Length score: {length_score}")
         
-        print(f"Assembleded features for all validation layers: {features}")
+        self.logger.info(f"Assembleded features for all validation layers: {features}")
         
         return features
 
