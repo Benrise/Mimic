@@ -9,7 +9,23 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from src import database
-from src.config import DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME, PROXY_URL, OPEN_AI_API_KEY, API_PORT, SYS_PROMPT, BOT_NAMES
+from src.config import (
+    DB_USER, 
+    DB_PASSWORD, 
+    DB_HOST, 
+    DB_PORT, 
+    DB_NAME, 
+    PROXY_URL, 
+    OPEN_AI_API_KEY,
+    API_PORT, 
+    SYS_PROMPT, 
+    BOT_NAMES,
+    BOT_REGISTERS,
+    BOT_AGES,
+    BOT_SPECIALIZATION,
+    BOT_FAVORITE_TRASH_WORDS,
+    BOT_GREETINGS,
+)
 from src.schemas import GetMessageResponseModel, GetMessageRequestModel
 from src.gpt_api import query_openai_with_context, query_openai_with_local_context
 
@@ -20,9 +36,14 @@ logger = logging.getLogger(__name__)
 """
 Имитация локальной БД для песочницы (/playground, /reset_playground, /get_playground_data)
 """
-random_name = random.choice(BOT_NAMES)
-logger.info(f"Chosen bot name (local history): {random_name}")
-sys_prompt_filled = SYS_PROMPT.format(random_name=random_name)
+sys_prompt_filled = SYS_PROMPT.format(
+    random_name=random.choice(BOT_NAMES),
+    random_register=random.choice(BOT_REGISTERS),
+    random_age=random.choice(BOT_AGES),
+    random_specialization=random.choice(BOT_SPECIALIZATION),
+    random_favorite_trash_word=random.choice(BOT_FAVORITE_TRASH_WORDS),
+    random_greeting=random.choice(BOT_GREETINGS)
+)
 dialog_history = [{"role": "system", "content": sys_prompt_filled}]
 
 
@@ -136,8 +157,8 @@ async def reset_playground():
     Эндпоинт для обнуления локальной истории диалога.
     """
     global dialog_history
-    dialog_history = [{"role": "system", "content": SYS_PROMPT}]
-    return "История диалога успешно обнулена до системного промпта."
+    dialog_history = [{"role": "system", "content": sys_prompt_filled}]
+    return "История диалога успешно обнулена до системного промпта." 
 
 @app.get("/get_playground_data")
 async def get_playground_data() -> list:

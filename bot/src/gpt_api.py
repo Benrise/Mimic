@@ -15,6 +15,11 @@ from .config import (
     SYS_PROMPT, 
     BOT_MODEL,
     BOT_NAMES,
+    BOT_REGISTERS,
+    BOT_AGES,
+    BOT_SPECIALIZATION,
+    BOT_FAVORITE_TRASH_WORDS,
+    BOT_GREETINGS
 )
 
 logger = logging.getLogger(__name__)
@@ -35,9 +40,14 @@ def build_openai_messages(dialog_id: UUID, last_msg_text: str) -> List[dict]:
     
     participant_index=0 => user, participant_index=1 => assistant
     """
-    random_name = random.choice(BOT_NAMES)
-    logger.info(f"Chosen bot name: {random_name}")
-    sys_prompt_filled = SYS_PROMPT.format(random_name=random_name)
+    sys_prompt_filled = SYS_PROMPT.format(
+        random_name=random.choice(BOT_NAMES),
+        random_register=random.choice(BOT_REGISTERS),
+        random_age=random.choice(BOT_AGES),
+        random_specialization=random.choice(BOT_SPECIALIZATION),
+        random_favorite_trash_word=random.choice(BOT_FAVORITE_TRASH_WORDS),
+        random_greeting=random.choice(BOT_GREETINGS),
+    )
     
     db_messages = select_messages_by_dialog(dialog_id)
 
