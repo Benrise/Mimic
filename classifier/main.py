@@ -48,7 +48,7 @@ def on_startup() -> None:
 
 @app.post("/playground")
 async def playground(dialog: IncomingDialog):
-    is_bot_probability = await classify_dialog(dialog.messages)
+    is_bot_probability = await classify_dialog(dialog.messages, msg.participant_index)
 
     return {
         "is_bot_probability": is_bot_probability
@@ -83,7 +83,7 @@ async def predict(msg: IncomingMessage) -> Prediction:
 
     logger.info("Conversation_text:", conversation_text)
     
-    is_bot_probability = await classify_text(conversation_text)
+    is_bot_probability = await classify_text(conversation_text, msg.participant_index)
     prediction_id = uuid.uuid4()
 
     return Prediction(
