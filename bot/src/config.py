@@ -17,6 +17,7 @@ GIGACHAT_API_KEY = os.getenv("GIGACHAT_API_KEY", "")
 
 # API BotHub
 BOTHUB_API_KEY = os.getenv("BOTHUB_API_KEY", "")
+BOTHUB_API_BASE_URL = os.getenv("BOTHUB_API_BASE_URL", "")
 
 PROXY_URL = os.getenv("PROXY_URL", "")
 

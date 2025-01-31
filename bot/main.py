@@ -15,8 +15,6 @@ from src.config import (
     DB_HOST, 
     DB_PORT, 
     DB_NAME, 
-    PROXY_URL, 
-    OPEN_AI_API_KEY,
     API_PORT, 
     SYS_PROMPT, 
     BOT_NAMES,
@@ -75,7 +73,6 @@ def on_startup() -> None:
             logger.warning("Waiting for PostgreSQL to become available...")
             time.sleep(2)
 
-    # Инициализация БД
     database.init_db()
 
 
@@ -91,7 +88,6 @@ async def get_message(body: GetMessageRequestModel) -> GetMessageResponseModel:
     4. Сохраняет ответ бота (participant_index=1) в БД.
     5. Возвращает ответ и dialog_id.
     """
-    # Сохраняем новое пользовательское сообщение
     user_msg_id = body.last_message_id or uuid4()
     database.insert_message(
         msg_id=user_msg_id,
@@ -100,12 +96,9 @@ async def get_message(body: GetMessageRequestModel) -> GetMessageResponseModel:
         participant_index=0
     )
 
-    response_from_openai = "Service unavailable"
-    # Генерируем ответ GPT
-    if OPEN_AI_API_KEY and PROXY_URL:
-        response_from_openai = query_openai_with_context(body)
+    response_from_openai = '.!.'
+    response_from_openai = await query_openai_with_context(body)
 
-    # Сохраняем сообщение бота
     bot_msg_id = uuid4()
     database.insert_message(
         msg_id=bot_msg_id,
@@ -136,11 +129,9 @@ async def playground(query: str):
     global dialog_history
     dialog_history.append({"role": "user", "content": query})
     
-    response_from_openai = "Service unavailable"
-    
-    if OPEN_AI_API_KEY and PROXY_URL:
-        response_from_openai = query_openai_with_local_context(dialog_history)
-        dialog_history.append({"role": "assistant", "content": response_from_openai})
+    response_from_openai = '.!.'
+    response_from_openai = await query_openai_with_local_context(dialog_history)
+    dialog_history.append({"role": "assistant", "content": response_from_openai})
        
     filtered_history = dialog_history[1:]
     
@@ -160,8 +151,8 @@ async def reset_playground():
     dialog_history = [{"role": "system", "content": sys_prompt_filled}]
     return "История диалога успешно обнулена до системного промпта." 
 
-@app.get("/get_playground_data")
-async def get_playground_data() -> list:
+@app.get("/get_playground_messages")
+async def get_playground_messages() -> list:
     global dialog_history
     
     filtered_dialog_history = dialog_history[1:]

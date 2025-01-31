@@ -61,7 +61,3 @@ def random_typo(text):
             text = text[:index] + text[index + 1] + text[index] + text[index + 2:]
 
     return text
-
-
-def get_random_name(names: list):
-    return random.choice(names)

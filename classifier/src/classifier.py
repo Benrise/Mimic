@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import joblib
 
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
@@ -29,31 +30,45 @@ class BotClassifier():
         self.logger = logging.getLogger(__name__)
         self.proxy_url = PROXY_URL
         self.validate_sys_prompt = VALIDATE_SYS_PROMPT
+        self.model = joblib.load('bot_classifier_model.pkl')
+        self.vectorizer = joblib.load('tfidf_vectorizer.pkl')
         self.weights = {
-            'openai': 0.6,
-            'gigachat': 0.4,
+            'model': 0.4, 
+            'openai': 0.3,
+            'gigachat': 0.2,
         }
 
     async def _validate_with_openai(self, dialog, participant_index):
+        """
+        Анализируем диалог для конкретного участника с помощью ChatGPT
+        """
         model = OPENAI_VALIDATION_MODEL
         sys_prompt_validate_filled = VALIDATE_SYS_PROMPT.format(
             participant_index=participant_index
         )
         base_url = None
-        
-        if BOTHUB_API_BASE_URL or len(BOTHUB_API_BASE_URL) > 0:
+        http_client = None
+
+        if BOTHUB_API_KEY and BOTHUB_API_BASE_URL:
+            self.logger.info("Using BotHub API")
             base_url = BOTHUB_API_BASE_URL
- 
+        elif OPEN_AI_API_KEY and PROXY_URL:
+            self.logger.info("Using Alex's OpenAI API")
+            http_client = AsyncClient(proxy=self.proxy_url) if self.proxy_url else None
+        else:
+            self.logger.error("Neither BotHub API nor OpenAI API credentials found.")
+            return 0.5
+
         chat = [{"role": "system", "content": sys_prompt_validate_filled}]
         chat.extend([{"role": "user", "content": line} for line in dialog])
 
         try:
             client = AsyncOpenAI(
-                api_key=self.api_keys['openai'], 
-                base_url=base_url, 
-                http_client=AsyncClient(proxy=self.proxy_url)
+                api_key=self.api_keys['openai'],
+                base_url=base_url,
+                http_client=http_client,
             )
-            response = await client.chat.completions.create(model=model,messages=chat)
+            response = await client.chat.completions.create(model=model, messages=chat)
             verdict = response.choices[0].message.content.lower()
             self.logger.info(f"OpenAI verdict: {verdict}")
             return float(verdict)
@@ -63,6 +78,9 @@ class BotClassifier():
             return 0.5
 
     async def _validate_with_gigachat(self, dialog, participant_index):
+        """
+        Анализируем диалог для конкретного участника с помощью GigaChat 
+        """
         model = GIGACHAT_VALIDATION_MODEL
         sys_prompt_validate_filled = VALIDATE_SYS_PROMPT.format(
             participant_index=participant_index
@@ -125,19 +143,50 @@ class BotClassifier():
             self._validate_with_openai(dialog, participant_index),
             self._validate_with_gigachat(dialog, participant_index),
         )
-        if openai_response != None:
-            features['openai'] = openai_response
-        if gigachat_response != None:
-            features['gigachat'] = gigachat_response
+        features['openai'] = openai_response
+        features['gigachat'] = gigachat_response
+            
+        """
+        Слой проверки обученной модели TF-IDF + Лог.регрессии
+        """
+        participant1_messages, participant2_messages = self._extract_dialog_messages(dialog)
+        
+        tfidf_features = self._get_tfidf_features(participant1_messages, participant2_messages)
+        
+        bot_score = self._get_model_prediction(tfidf_features)
+        features['model'] = bot_score[0]
         
         return features
+    
+    def _get_tfidf_features(self, participant1_messages, participant2_messages):
+        """
+        Преобразуем сообщения участников в TF-IDF векторы
+        """
+        all_messages = participant1_messages + participant2_messages
+        return self.vectorizer.transform(all_messages)
+
+    def _get_model_prediction(self, tfidf_features):
+        """
+        Предсказание модели на основе TF-IDF признаков
+        """
+        verdict = self.model.predict(tfidf_features)
+        self.logger.info(f'Model verdict: f{verdict}')
+        return verdict
+
+    def _calculate_final_score(self, features):
+        """
+        Вычисление итогового балла на основе взвешенных оценок
+        """
+        weighted_score = sum(features[key] * self.weights.get(key, 1) for key in features)
+        total_weight = sum(self.weights.values())
+        return weighted_score / total_weight if total_weight > 0 else 0
 
     async def predict(self, dialog, participant_index: int):
+        """
+        Основная функция для предсказания
+        """
         features = await self._extract_validations_layers(dialog, participant_index)
         
-        weighted_score = sum(features[key] * self.weights.get(key, 1) for key in features)
-    
-        total_weight = sum(self.weights.values())
-        score = weighted_score / total_weight if total_weight > 0 else 0
+        score = self._calculate_final_score(features)
         
         return score
