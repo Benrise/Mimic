@@ -25,14 +25,10 @@
 
 ## Визуализации частотного анализа
 ### Облако слов для сообщений человека
-<p>
-    <img src="./images/cloud_of_words_human.png" />
-</p>
+![image](https://github.com/user-attachments/assets/b2a54cab-99a3-4b2d-9558-73452bf371e2)
 
 ### Облако слов для сообщений бота
-<p>
-    <img src="./images/cloud_of_words_bot.png" />
-</p>
+![image](https://github.com/user-attachments/assets/70d2913d-621e-4881-aeae-4ca942cb80ab)
 
 ## Сгенерированные признаки
 - Длина текста
