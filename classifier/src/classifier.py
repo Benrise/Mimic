@@ -28,10 +28,9 @@ class BotClassifier():
             'bothub': BOTHUB_API_KEY,
         }
         self.logger = logging.getLogger(__name__)
-        self.proxy_url = PROXY_URL
         self.validate_sys_prompt = VALIDATE_SYS_PROMPT
-        self.model = joblib.load('bot_classifier_model.pkl')
-        self.vectorizer = joblib.load('tfidf_vectorizer.pkl')
+        self.model = joblib.load('./src/models/bot_classifier_model.pkl')
+        self.vectorizer = joblib.load('./src/models/tfidf_vectorizer.pkl')
         self.weights = {
             'model': 0.4, 
             'openai': 0.3,
@@ -46,15 +45,18 @@ class BotClassifier():
         sys_prompt_validate_filled = VALIDATE_SYS_PROMPT.format(
             participant_index=participant_index
         )
+        api_key = None
         base_url = None
         http_client = None
 
-        if BOTHUB_API_KEY and BOTHUB_API_BASE_URL:
+        if self.api_keys['bothub'] and BOTHUB_API_BASE_URL:
             self.logger.info("Using BotHub API")
             base_url = BOTHUB_API_BASE_URL
-        elif OPEN_AI_API_KEY and PROXY_URL:
+            api_key = self.api_keys['bothub']
+        elif self.api_keys['openai'] and PROXY_URL:
             self.logger.info("Using Alex's OpenAI API")
-            http_client = AsyncClient(proxy=self.proxy_url) if self.proxy_url else None
+            http_client = AsyncClient(proxy=PROXY_URL) if self.proxy_url else None
+            api_key = self.api_keys['openai']
         else:
             self.logger.error("Neither BotHub API nor OpenAI API credentials found.")
             return 0.5
@@ -64,7 +66,7 @@ class BotClassifier():
 
         try:
             client = AsyncOpenAI(
-                api_key=self.api_keys['openai'],
+                api_key=api_key,
                 base_url=base_url,
                 http_client=http_client,
             )
@@ -126,7 +128,7 @@ class BotClassifier():
         
         return participant1_messages, participant2_messages
 
-    async def _extract_validations_layers(self, dialog, participant_index: int):
+    async def _extract_validations_layers(self, message, dialog, participant_index: int):
         """
         Формирование слоев проверок
         """
@@ -149,29 +151,26 @@ class BotClassifier():
         """
         Слой проверки обученной модели TF-IDF + Лог.регрессии
         """
-        participant1_messages, participant2_messages = self._extract_dialog_messages(dialog)
         
-        tfidf_features = self._get_tfidf_features(participant1_messages, participant2_messages)
-        
-        bot_score = self._get_model_prediction(tfidf_features)
-        features['model'] = bot_score[0]
+        tfidf_features = self._get_tfidf_features(message)
+        message_score = self._get_model_prediction(tfidf_features)
+        features['model'] = message_score
         
         return features
     
-    def _get_tfidf_features(self, participant1_messages, participant2_messages):
+    def _get_tfidf_features(self, message):
         """
-        Преобразуем сообщения участников в TF-IDF векторы
+        Преобразуем сообщение в TF-IDF векторы
         """
-        all_messages = participant1_messages + participant2_messages
-        return self.vectorizer.transform(all_messages)
+        return self.vectorizer.transform([message])
 
     def _get_model_prediction(self, tfidf_features):
         """
         Предсказание модели на основе TF-IDF признаков
         """
         verdict = self.model.predict(tfidf_features)
-        self.logger.info(f'Model verdict: f{verdict}')
-        return verdict
+        self.logger.info(f'Model verdict: {verdict}')
+        return verdict[0]
 
     def _calculate_final_score(self, features):
         """
@@ -181,11 +180,11 @@ class BotClassifier():
         total_weight = sum(self.weights.values())
         return weighted_score / total_weight if total_weight > 0 else 0
 
-    async def predict(self, dialog, participant_index: int):
+    async def predict(self, message, dialog, participant_index: int):
         """
         Основная функция для предсказания
         """
-        features = await self._extract_validations_layers(dialog, participant_index)
+        features = await self._extract_validations_layers(message, dialog, participant_index)
         
         score = self._calculate_final_score(features)
         

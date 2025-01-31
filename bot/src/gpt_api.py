@@ -64,7 +64,7 @@ async def build_openai_messages(dialog_id: UUID, last_msg_text: str) -> List[dic
         random_greeting=random.choice(BOT_GREETINGS),
     )
     
-    db_messages = await select_messages_by_dialog(dialog_id)
+    db_messages = select_messages_by_dialog(dialog_id)
 
     messages_for_openai = []
     messages_for_openai.append({"role": "system", "content": sys_prompt_filled})
