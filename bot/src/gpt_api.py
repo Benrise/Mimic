@@ -144,6 +144,8 @@ async def retry_if_botlike(answer_text: str, messages: List[dict], max_retries: 
     Если да, то запрашивает OpenAI на перегенерацию.
     """
     classifier = load_classifier()
+    
+    modified_messages = messages.copy()
 
     for attempt in range(max_retries + 1):
         if classifier.predict(answer_text) == 0:
@@ -152,20 +154,27 @@ async def retry_if_botlike(answer_text: str, messages: List[dict], max_retries: 
         if attempt < max_retries:
             logger.warning(f"Retrying response, detected as bot-like (attempt {attempt + 1})")
 
-            messages.append({
+            modified_messages.append({
                 "role": "user",
                 "content": "[СИСТЕМА] Сгенерированное тобой сообщение не прошло проверку на бота. Перегенерируй его."
             })
+            
+            logger.warning(f"Bot detected message before: {answer_text}")
 
             chat_completion = await client.chat.completions.create(
-                messages=messages,
+                messages=modified_messages,
                 model=BOT_MODEL,
             )
             answer_text = chat_completion.choices[0].message.content
+            
+            logger.warning(f"Bot detected message after: {answer_text}")
 
         else:
             logger.error("Max retries reached, returning last response.")
             break
+
+    if modified_messages != messages:
+        modified_messages.pop()
 
     return answer_text
 
