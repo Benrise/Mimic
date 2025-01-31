@@ -99,6 +99,7 @@ async def predict(msg: IncomingMessage) -> Prediction:
     3. Применяем классификатор.
     4. Возвращаем объект `Prediction`.
     """
+    CLASSIFIER_THRESHOLD = 0.83
 
     database.insert_message(
         id=msg.id,
@@ -122,6 +123,12 @@ async def predict(msg: IncomingMessage) -> Prediction:
         all_messages=conversation_text, 
         participant_index=msg.participant_index
     )
+    
+    if is_bot_probability >= CLASSIFIER_THRESHOLD:
+        is_bot_probability = 1
+    else:
+        is_bot_probability = 0
+    
     prediction_id = uuid.uuid4()
 
     return Prediction(
