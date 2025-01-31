@@ -32,7 +32,7 @@ class BotClassifier():
         self.model = joblib.load('./src/models/bot_classifier_model.pkl')
         self.vectorizer = joblib.load('./src/models/tfidf_vectorizer.pkl')
         self.weights = {
-            'model': 0.4, 
+            'model': 0.5, 
             'openai': 0.3,
             'gigachat': 0.2,
         }

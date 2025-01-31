@@ -26,7 +26,6 @@ from .config import (
 
 logger = logging.getLogger(__name__)
 
-
 if BOTHUB_API_KEY and BOTHUB_API_BASE_URL:
     logger.info("Using BotHub API")
     api_key = BOTHUB_API_KEY
