@@ -1,11 +1,13 @@
 import logging
 import random
+import joblib
 
 from typing import List
 from openai import AsyncOpenAI
 from httpx import AsyncClient
 from uuid import UUID
 
+from .classifier import ModelClassifier
 from .utils import human_sleep, introduce_typos
 from .database import select_messages_by_dialog
 from .schemas import GetMessageRequestModel
@@ -25,6 +27,15 @@ from .config import (
 )
 
 logger = logging.getLogger(__name__)
+
+_classifier = None
+
+def load_classifier():
+    global _classifier
+    if _classifier is None:
+        logger.info("Loading classifier...")
+        _classifier = ModelClassifier()
+    return _classifier
 
 if BOTHUB_API_KEY and BOTHUB_API_BASE_URL:
     logger.info("Using BotHub API")
@@ -96,8 +107,9 @@ async def query_openai_with_context(body: GetMessageRequestModel) -> str:
     answer_text = chat_completion.choices[0].message.content
     logger.info(f"OpenAI answer: {answer_text}")
     
+    answer_text = await retry_if_botlike(answer_text, messages)
+    
     human_sleep(answer_text)
-        
     return answer_text
 
 
@@ -121,8 +133,40 @@ async def query_openai_with_local_context(dialog: list) -> str:
     
     logger.info(f"OpenAI answer: {answer_text}")
     
-    human_sleep(answer_text)
+    answer_text = await retry_if_botlike(answer_text, dialog)
     
+    human_sleep(answer_text)
+    return answer_text
+
+async def retry_if_botlike(answer_text: str, messages: List[dict], max_retries: int = 1) -> str:
+    """
+    Проверяет, является ли ответ ботоподобным. 
+    Если да, то запрашивает OpenAI на перегенерацию.
+    """
+    classifier = load_classifier()
+
+    for attempt in range(max_retries + 1):
+        if classifier.predict(answer_text) == 0:
+            return answer_text
+
+        if attempt < max_retries:
+            logger.warning(f"Retrying response, detected as bot-like (attempt {attempt + 1})")
+
+            messages.append({
+                "role": "user",
+                "content": "[СИСТЕМА] Сгенерированное тобой сообщение не прошло проверку на бота. Перегенерируй его."
+            })
+
+            chat_completion = await client.chat.completions.create(
+                messages=messages,
+                model=BOT_MODEL,
+            )
+            answer_text = chat_completion.choices[0].message.content
+
+        else:
+            logger.error("Max retries reached, returning last response.")
+            break
+
     return answer_text
 
 

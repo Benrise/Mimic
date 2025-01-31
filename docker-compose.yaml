@@ -28,6 +28,7 @@ services:
     container_name: gpt_bot_service
     volumes:
       - ./bot:/app
+      - ./models:/app/models
     env_file:
       .env
     depends_on:
@@ -46,6 +47,7 @@ services:
       .env
     volumes:
       - ./classifier:/app
+      - ./models:/app/models
     depends_on:
       postgres:
         condition: service_healthy

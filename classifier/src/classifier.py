@@ -29,8 +29,8 @@ class BotClassifier():
         }
         self.logger = logging.getLogger(__name__)
         self.validate_sys_prompt = VALIDATE_SYS_PROMPT
-        self.model = joblib.load('./src/models/bot_classifier_model.pkl')
-        self.vectorizer = joblib.load('./src/models/tfidf_vectorizer.pkl')
+        self.model = joblib.load('./models/bot_classifier_model.pkl')
+        self.vectorizer = joblib.load('./models/tfidf_vectorizer.pkl')
         self.weights = {
             'model': 0.5, 
             'openai': 0.3,
