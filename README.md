@@ -25,10 +25,12 @@
 
 ## Визуализации частотного анализа
 ### Облако слов для сообщений человека
-![image](https://github.com/user-attachments/assets/b2a54cab-99a3-4b2d-9558-73452bf371e2)
+![image](https://github.com/user-attachments/assets/7430d50c-3a12-4ee5-b867-2f4b79728532)
+
 
 ### Облако слов для сообщений бота
-![image](https://github.com/user-attachments/assets/70d2913d-621e-4881-aeae-4ca942cb80ab)
+![image](https://github.com/user-attachments/assets/09e1948b-ffbc-4794-9a0c-6da25f53e74f)
+
 
 ## Сгенерированные признаки
 - Длина текста
