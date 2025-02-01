@@ -26,8 +26,8 @@ PROXY_URL = os.getenv("PROXY_URL", "")
 INFERENCE_PORT = os.getenv("INFERENCE_PORT", "8001")
 
 # Параметры моделей
-GIGACHAT_VALIDATION_MODEL = "GigaChat"
-OPENAI_VALIDATION_MODEL = "gpt-4o-mini"
+GIGACHAT_VALIDATION_MODEL = "GigaChat-Max"
+OPENAI_VALIDATION_MODEL = "gpt-4o"
 
 VALIDATE_SYS_PROMPT = """
 Ты — эксперт по анализу диалогов и определению ботов.

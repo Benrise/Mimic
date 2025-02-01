@@ -55,7 +55,7 @@ class BotClassifier():
             api_key = self.api_keys['bothub']
         elif self.api_keys['openai'] and PROXY_URL:
             self.logger.info("Using Alex's OpenAI API")
-            http_client = AsyncClient(proxy=PROXY_URL) if self.proxy_url else None
+            http_client = AsyncClient(proxy=PROXY_URL) if PROXY_URL else None
             api_key = self.api_keys['openai']
         else:
             self.logger.error("Neither BotHub API nor OpenAI API credentials found.")
