@@ -38,7 +38,8 @@
 - Количество эмодзи
 - Счетчик повторяющихся слов
 
-![image](https://github.com/user-attachments/assets/9af82d47-f174-4677-b81c-328e68acc63b)
+![image](https://github.com/user-attachments/assets/337ff45f-84c9-4bae-902f-8a471f147247)
+
 
 
 ## Обучение модели
